@@ -1,7 +1,7 @@
 import serial
 import threading
 
-from lib.message import Message
+from .message import Message
 
 
 class Interface:
@@ -14,7 +14,8 @@ class Interface:
             baudrate=115200,
             parity=serial.PARITY_NONE,
             stopbits=serial.STOPBITS_ONE,
-            bytesize=serial.EIGHTBITS
+            bytesize=serial.EIGHTBITS, 
+            timeout=2,
         )
 
     def send(self, message):
@@ -23,6 +24,10 @@ class Interface:
         self.serial.flush()
         response = Message.read(self.serial)
         self.lock.release()
+    
+        if response is None:
+            return None
+
         return response.params
 
     def connected(self):
@@ -65,7 +70,23 @@ class Interface:
         request = Message([0xAA, 0xAA], 2, 10, False, False, [], direction='out')
         return self.send(request)
 
-    def reset_pose(self, manual, rear_arm_angle, front_arm_angle):
+    def reset_pose(self, manual, rear_arm_angle=None, front_arm_angle=None):
+        '''
+
+        Parameters
+        ----------
+        manual: int
+            can be either 0 or 1. (sudo bool). 
+            0 is if you don't need to provide an angle measurement, 1 is you do
+        rear_arm_angle: float (optional)
+            if manual = 1, you need to provide the angle of the "rear arm"
+        front_arm_angle: float (optional)
+            if manual = 1, you need to provide the angle of the "front arm"
+
+        '''
+        if manual == 1:
+            assert rear_arm_angle is not None
+            assert front_arm_angle is not None
         request = Message([0xAA, 0xAA], 2, 11, True, False, [manual, rear_arm_angle, front_arm_angle], direction='out')
         return self.send(request)
 
@@ -182,6 +203,33 @@ class Interface:
         return self.send(request)
 
     def set_jog_command(self, jog_type, command, queue=True):
+        '''
+        
+        performs a jog command.
+
+        Parameters
+        ----------
+        jog_type : int
+            can be 0 or 1. 0 is coordinate jog, 1 is joint jog
+        command : int
+            can be 0-8. This is the coordinate or joint to move.
+            zero can be used to stop the jog
+           
+            value   coordinate  joint
+            0       null        null
+            1       X+          Joint1+
+            2       X-          Joint1-
+            3       Y+          Joint2+
+            4       Y-          Joint2-
+            5       Z+          Joint3+
+            6       Z-          Joint3-
+            7       R+          Joint4+
+            8       R-          Joint4-
+
+        queue : bool
+            If a queue is to be used.
+
+        '''
         request = Message([0xAA, 0xAA], 2, 73, True, queue, [jog_type, command], direction='out')
         return self.send(request)
 
@@ -226,6 +274,37 @@ class Interface:
         return self.send(request)
 
     def set_point_to_point_command(self, mode, x, y, z, r, queue=True):
+        '''
+        moves to dobot arm from one point to another.
+        Taken from Dobot Communication Protocol V1.0.4
+       
+        Parameters
+        ----------
+
+        mode: int
+            How to move
+                int     meaning          coordinates
+                0       jump             xyz
+                1       joint movement   xyz
+                2       linear movement  xyz
+                3       jump             ijk - angles of the robot arms
+                4       joint movement   ijk
+                5       linear movement  ijk
+                6       joint movment    increment angle
+                7       linear increment increment angle
+                8       joint increment  joint increment, XYZ
+                9       jump and linear  XYZ
+        x: float
+            the x dimension or i angle
+        y: float
+            the y dimension or angle j
+        z: float
+            the z dimension or the k angle
+        r: float
+            the rotation of the hand -- if applicable ?
+            
+        '''
+
         request = Message([0xAA, 0xAA], 2, 84, True, queue, [mode, x, y, z, r], direction='out')
         return self.send(request)
 
@@ -304,6 +383,25 @@ class Interface:
         return self.send(request)
 
     def set_io_multiplexing(self, address, multiplex, queue=True):
+        '''
+        sets multiplexing - really seems to be the extended items I/O type?
+
+        Parameters
+        ----------
+        address: 8bit int
+            An EIO address. (Extensible I/O adrdress)
+        multiplex: int
+            A IOMultiplexing type
+                value   meaning
+                0       Not in use
+                1       PWM Output
+                2       Digital Output
+                3       Digital Input
+                4       Analgue input
+
+            These appear in a different order in Dobit API V1.0.0
+            to Dobot Communication Protocol V1.0.4
+        '''
         request = Message([0xAA, 0xAA], 2, 130, True, queue, [address, multiplex], direction='out')
         return self.send(request)
 
@@ -312,6 +410,16 @@ class Interface:
         return self.send(request)
 
     def set_io_do(self, address, level, queue=True):
+        '''
+        sets an extensible I/O  to either high or low
+
+        Parameters
+        ----------
+        address: 8bit int
+            An EIO address. (Extensible I/O adrdress)
+        level: int
+            can be 0 or 1. (low or high)
+        '''
         request = Message([0xAA, 0xAA], 2, 131, True, queue, [address, level], direction='out')
         return self.send(request)
 
@@ -320,6 +428,19 @@ class Interface:
         return self.send(request)
 
     def set_io_pwm(self, address, frequency, duty_cycle, queue=True):
+        '''
+        sets PWM to the extended I/O  
+        from to Dobot Communication Protocol V1.0.4
+
+        Parameters
+        ----------
+        address: 8bit int
+            An EIO address. (Extensible I/O adrdress)
+        frequency: float
+            the PWM frequency 10 - 10e6, in units of Hz
+        duty_cycle: float
+            is says 0-100. 
+        '''
         request = Message([0xAA, 0xAA], 2, 132, True, queue, [address, frequency, duty_cycle], direction='out')
         return self.send(request)
 
@@ -328,11 +449,27 @@ class Interface:
         return self.send(request)
 
     def get_io_adc(self):
+        '''
+        reads an analogue value?
+        from to Dobot Communication Protocol V1.0.4
+        '''
         request = Message([0xAA, 0xAA], 2, 134, False, False, [], direction='out')
         return self.send(request)
 
     def set_extended_motor_velocity(self, index, enable, speed, queue=True):
-        request = Message([0xAA, 0xAA], 2, 135, True, queue, [index, enable, speed], direction='out')
+        '''
+        sets the motot velocity of an extended motor
+
+        Parameters
+        ----------
+        index : index
+            can be either 0 or 1. 0 is stepper motor 1? and 1 is stepper motor 2?
+        enable : bool
+            Is motor control enabled
+        speed : float
+            The speed of the motor in pulses per second
+        '''
+        request = Message([0xAA, 0xAA], 2, 135, 1, queue, [index, enable, speed], direction='out')
         return self.send(request)
 
     def get_color_sensor(self, index):

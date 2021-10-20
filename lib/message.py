@@ -1,11 +1,10 @@
-from lib.parsers import parsers
-
+from .parsers import parsers
 
 class Message:
-    def __init__(self, header, length, id, rw, is_queued, params, direction='in'):
+    def __init__(self, header, length, ID, rw, is_queued, params, direction='in'):
         self.header = header
         self.length = length
-        self.id = id
+        self.id = ID
         self.rw = rw
         self.is_queued = is_queued
         self.raw_params = []
