@@ -104,5 +104,4 @@ class Message:
 
         result = bytes(self.header + [self.length] + [self.id] + [control] + self.raw_params + [self.checksum])
 
-        
         return result
