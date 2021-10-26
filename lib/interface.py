@@ -30,7 +30,11 @@ class Interface:
 
         return response.params
 
+    @property
     def connected(self):
+        '''
+        returns if the serial port is open, not if it is connected to the dobot
+        '''
         return self.serial.isOpen()
 
     def get_device_serial_number(self):
@@ -87,6 +91,9 @@ class Interface:
         if manual == 1:
             assert rear_arm_angle is not None
             assert front_arm_angle is not None
+        else:
+            rear_arm_angle=0
+            front_arm_angle=0
         request = Message([0xAA, 0xAA], 2, 11, True, False, [manual, rear_arm_angle, front_arm_angle], direction='out')
         return self.send(request)
 
@@ -466,10 +473,10 @@ class Interface:
             can be either 0 or 1. 0 is stepper motor 1? and 1 is stepper motor 2?
         enable : bool
             Is motor control enabled
-        speed : float
+        speed : int
             The speed of the motor in pulses per second
         '''
-        request = Message([0xAA, 0xAA], 2, 135, 1, queue, [index, enable, speed], direction='out')
+        request = Message([0xAA, 0xAA], 2, 135, 1, queue, [index, enable, int(speed)], direction='out')
         return self.send(request)
 
     def get_color_sensor(self, index):
