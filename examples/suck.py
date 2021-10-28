@@ -2,10 +2,10 @@
 import os
 import sys
 from time import sleep
-sys.path.append('..')
-from lib import Interface
-
-bot = Interface('COM4')
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+import connecting
+#connect
+bot = connecting.connect()
 
 print('Bot status:', 'connected' if bot.connected else 'not connected')
 

@@ -2,9 +2,9 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath('.'))
 
-from lib.interface import Interface
-
-bot = Interface('/dev/tty.SLAB_USBtoUART')
+import connecting
+#connect
+bot = connecting.connect()
 
 print('Bot status:', 'connected' if bot.connected() else 'not connected')
 

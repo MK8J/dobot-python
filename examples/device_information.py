@@ -1,14 +1,14 @@
 import sys
 import os
-sys.path.insert(0, os.path.abspath('.'))
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from time import sleep
 
-from lib.interface import Interface
+import connecting
+#connect
+bot = connecting.connect()
 
-bot = Interface('/dev/tty.SLAB_USBtoUART')
-
-print('Bot status:', 'connected' if bot.connected() else 'not connected')
+print('Bot status:', 'connected' if bot.connected else 'not connected')
 
 device_name = bot.get_device_name()
 print('Name:', device_name)

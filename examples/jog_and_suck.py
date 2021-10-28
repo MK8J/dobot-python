@@ -2,16 +2,16 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-from time import sleep
+import time
 
 from lib.interface import Interface
 
 # homes the dobot first
 #import homing
+#time.sleep(30)
 import connecting
 #connect
 bot = connecting.connect()
-
 # Defaults
 bot.set_jog_joint_params([20, 20, 20, 30], [100, 100, 100, 100])
 bot.set_jog_coordinate_params([20, 20, 20, 30], [100, 100, 100, 100])

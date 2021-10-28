@@ -1,12 +1,12 @@
 import sys
 import os
-sys.path.insert(0, os.path.abspath('.'))
+sys.path.append( os.path.dirname(os.path.dirname(__file__)))
 
 import math
 
-from lib.interface import Interface
-
-bot = Interface('/dev/tty.SLAB_USBtoUART')
+import connecting
+#connect
+bot = connecting.connect()
 
 print('Bot status:', 'connected' if bot.connected() else 'not connected')
 

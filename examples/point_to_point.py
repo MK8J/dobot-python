@@ -1,14 +1,16 @@
 import sys
 import os
-sys.path.insert(0, os.path.abspath('.'))
+import time
+print(__file__)
+sys.path.append(os.path.abspath('..'))
 
 from time import sleep
 
 from lib.interface import Interface
 
-bot = Interface('/dev/tty.SLAB_USBtoUART')
-
-print('Bot status:', 'connected' if bot.connected() else 'not connected')
+import connecting
+#connect
+bot = connecting.connect()
 
 joint_params = bot.get_point_to_point_joint_params()
 print('Joint params:', joint_params)
@@ -26,17 +28,20 @@ coordinate_params = bot.get_point_to_point_coordinate_params()
 print('Coordinate params:', coordinate_params)
 
 # Does nothing?
-bot.set_point_to_point_command(0, 10, 10, 10, 10)
-sleep(1)
+#bot.set_point_to_point_command(0, 10, 10, 10, 10)
+#sleep(1)
 
 # Does nothing?
-bot.set_point_to_point_command(1, 30, 30, 30, 30)
-sleep(1)
-
+#bot.set_point_to_point_command(1, 30, 30, 30, 30)
+#sleep(1)
 # One axis at a time
-bot.set_point_to_point_command(3, 10, 10, 10, 10)
-sleep(1)
-
+pose = bot.get_pose()
+x,y,z,r = pose[:4]
+for i in range(1):
+    z += 0.50
+    bot.set_point_to_point_command(2, x, y, z, r)
+    time.sleep(0.01)
+1/0
 # One axis at a time
 bot.set_point_to_point_command(3, 30, 30, 30, 30)
 sleep(1)
