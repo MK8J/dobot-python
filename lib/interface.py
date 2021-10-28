@@ -3,8 +3,66 @@ import threading
 
 from .message import Message
 
+class Extented_interface(Interface):
+    '''
+    This includes extra helper functions to make things easier to use
+    '''
+
+    def set_conveyor_speed(self,index, speed, queue=True):
+        '''
+        Sets the conveyor to a speed in mm/s
+
+        needs to be checked - info obtained from comments on agithub issue https://github.com/luismesas/pydobot/issues/22 
+
+        Parameters
+        ----------
+        index: int
+            Index of the stepper motor. This is the number of the port the stepper motor
+            is pluged into. It should be 0
+        speed: float
+            The speed in mm/s at which you want to run the speed
+        queue: bool
+            If to add to teh queue or just run immdeaitly
+        '''
+        MM_PER_REV = 34 * math.pi  # Seems to actually be closer to 36mm when measured but 34 works better
+        STEP_ANGLE_DEG = 1.8
+        STEPS_PER_REV = 360.0 / STEP_ANGLE_DEG * 10.0 * 16.0 / 2.0 # assume the 10*16/2 related pulses (clock) to steps
+        pulses_per_second = speed_mm_per_sec / MM_PER_REV * STEPS_PER_REV
+        self.set_extended_motor_velocity(index=index,enable=True, speed =pulses_per_second, queue=True)
+
+
+    def set_conveyor_distance(self, index, distance, speed=100)
+        '''
+        moves the convery a specific distance in mm
+
+        Parameters
+        ----------
+        index: int
+            Index of the stepper motor. This is the number of the port the stepper motor
+            is pluged into. It should be 0
+        distance: float
+            The distance in mm to move the conveyor
+        speed: float
+            The speed in mm/s at which you want to run the speed
+        '''
+
+        # get the time in seconds to wait
+        time = distance/speed
+        
+        self.set_conveyor_speed(index, speed, queue=True)
+
+        self.wait(time*1000, queue=True)
+
+        self.set_extended_motor_velocity(index=index,
+                enable=True,
+                speed =0,
+                queue=True
+                )
 
 class Interface:
+    '''
+    This is a python replication of the dobot commands
+    '''
     def __init__(self, port):
         threading.Thread.__init__(self)
         self.lock = threading.Lock()
@@ -283,7 +341,7 @@ class Interface:
     def set_point_to_point_command(self, mode, x, y, z, r, queue=True):
         '''
         moves to dobot arm from one point to another.
-        Taken from Dobot Communication Protocol V1.0.4
+        Taken from Dobot Communication Protocol V1.1.3
        
         Parameters
         ----------
@@ -291,22 +349,22 @@ class Interface:
         mode: int
             How to move
                 int     meaning          coordinates
-                0       jump             xyz
-                1       joint movement   xyz
-                2       linear movement  xyz
-                3       jump             ijk - angles of the robot arms
-                4       joint movement   ijk
-                5       linear movement  ijk
-                6       joint movment    increment angle
-                7       linear increment increment angle
-                8       joint increment  joint increment, XYZ
-                9       jump and linear  XYZ
+                0       jump             Cartesian
+                1       joint movement   Cartesian
+                2       linear movement  Cartesian
+                3       jump             Joint - angles of the robot arms
+                4       joint movement   Joint
+                5       linear movement  Joint
+                6       joint movment    Joint
+                7       linear           Cartesian incriment in joint coordinate
+                8       joint            Cartesian increment in Cartesian
+                9       jump             Cartesian increment in Cartesian
         x: float
-            the x dimension or i angle
+            the x dimension or angle of a joint i
         y: float
-            the y dimension or angle j
+            the y dimension or angle of  joint j
         z: float
-            the z dimension or the k angle
+            the z dimension or the angle of joint k
         r: float
             the rotation of the hand -- if applicable ?
             
@@ -391,7 +449,7 @@ class Interface:
 
     def set_io_multiplexing(self, address, multiplex, queue=True):
         '''
-        sets multiplexing - really seems to be the extended items I/O type?
+        sets multiplexing for the extended items (things pluged into the arm)
 
         Parameters
         ----------
@@ -473,8 +531,10 @@ class Interface:
             can be either 0 or 1. 0 is stepper motor 1? and 1 is stepper motor 2?
         enable : bool
             Is motor control enabled
-        speed : int
-            The speed of the motor in pulses per second
+        speed : int - 
+            The number of the pulses per second. incorrectly labled in the offical
+            documentation as float
+
         '''
         request = Message([0xAA, 0xAA], 2, 135, 1, queue, [index, enable, int(speed)], direction='out')
         return self.send(request)
