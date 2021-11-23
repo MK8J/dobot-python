@@ -1,63 +1,9 @@
 import serial
 import threading
+import numpy as np
 
 from .message import Message
 
-class Extented_interface(Interface):
-    '''
-    This includes extra helper functions to make things easier to use
-    '''
-
-    def set_conveyor_speed(self,index, speed, queue=True):
-        '''
-        Sets the conveyor to a speed in mm/s
-
-        needs to be checked - info obtained from comments on agithub issue https://github.com/luismesas/pydobot/issues/22 
-
-        Parameters
-        ----------
-        index: int
-            Index of the stepper motor. This is the number of the port the stepper motor
-            is pluged into. It should be 0
-        speed: float
-            The speed in mm/s at which you want to run the speed
-        queue: bool
-            If to add to teh queue or just run immdeaitly
-        '''
-        MM_PER_REV = 34 * math.pi  # Seems to actually be closer to 36mm when measured but 34 works better
-        STEP_ANGLE_DEG = 1.8
-        STEPS_PER_REV = 360.0 / STEP_ANGLE_DEG * 10.0 * 16.0 / 2.0 # assume the 10*16/2 related pulses (clock) to steps
-        pulses_per_second = speed_mm_per_sec / MM_PER_REV * STEPS_PER_REV
-        self.set_extended_motor_velocity(index=index,enable=True, speed =pulses_per_second, queue=True)
-
-
-    def set_conveyor_distance(self, index, distance, speed=100)
-        '''
-        moves the convery a specific distance in mm
-
-        Parameters
-        ----------
-        index: int
-            Index of the stepper motor. This is the number of the port the stepper motor
-            is pluged into. It should be 0
-        distance: float
-            The distance in mm to move the conveyor
-        speed: float
-            The speed in mm/s at which you want to run the speed
-        '''
-
-        # get the time in seconds to wait
-        time = distance/speed
-        
-        self.set_conveyor_speed(index, speed, queue=True)
-
-        self.wait(time*1000, queue=True)
-
-        self.set_extended_motor_velocity(index=index,
-                enable=True,
-                speed =0,
-                queue=True
-                )
 
 class Interface:
     '''
@@ -658,3 +604,67 @@ class Interface:
     def get_current_queue_index(self):
         request = Message([0xAA, 0xAA], 2, 246, True, False, [], direction='out')
         return self.send(request)
+
+class Extented_interface(Interface):
+    '''
+    This includes extra helper functions to make things easier to use
+    '''
+
+    def set_conveyor_speed(self,index, speed, queue=True):
+        '''
+        Sets the conveyor to a speed in mm/s
+
+        needs to be checked - info obtained from comments on agithub issue https://github.com/luismesas/pydobot/issues/22 
+
+        Parameters
+        ----------
+        index: int
+            Index of the stepper motor. This is the number of the port the stepper motor
+            is pluged into. It should be 0
+        speed: float
+            The speed in mm/s at which you want to run the speed
+        queue: bool
+            If to add to teh queue or just run immdeaitly
+        '''
+        MM_PER_REV = 33 * np.pi  # Seems to actually be closer to 36mm when measured but 34 works better
+        STEP_ANGLE_DEG = 1.8
+        STEPS_PER_REV = 360.0 / STEP_ANGLE_DEG * 10.0 * 16.0 / 2.0 # assume the 10*16/2 related pulses (clock) to steps
+        pulses_per_second = int(speed/ MM_PER_REV * STEPS_PER_REV)
+        print(index, pulses_per_second)
+        self.set_extended_motor_velocity(index=index,enable=True, speed =pulses_per_second, queue=True)
+
+
+    def set_conveyor_distance(self, index, distance, speed=100):
+        '''
+        moves the convery a specific distance in mm
+
+        Parameters
+        ----------
+        index: int
+            Index of the stepper motor. This is the number of the port the stepper motor
+            is pluged into. It should be 0
+        distance: float
+            The distance in mm to move the conveyor
+        speed: float
+            The speed in mm/s at which you want to run the speed
+        '''
+        speed = abs(speed)
+
+        time = abs(distance/speed)
+        # get the time in seconds to wait
+
+        if distance <0:
+            speed *=-1
+        
+        self.set_conveyor_speed(index, speed, queue=True)
+
+        self.wait(int(time*1000), queue=True)
+
+        self.set_extended_motor_velocity(index=index,
+                enable=True,
+                speed =0,
+                queue=True
+                )
+
+
+

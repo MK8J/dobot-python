@@ -63,14 +63,10 @@ class Dobot:
         # If there are no more instructions in the queue, it will end up
         # always returning the last instruction - even if it has finished.
         # Use a zero wait as a non-operation to bypass this limitation
-        self.interface.wait(0)
-
+        
         if queue_index is None:
-            queue_index = self.interface.get_current_queue_index()
-        while True:
-            if self.interface.get_current_queue_index() > queue_index:
-                break
-
+            queue_index = self.interface.wait(0)
+        while  self.interface.get_current_queue_index() != queue_index:
             sleep(0.5)
 
     # Move according to the given path
